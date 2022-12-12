@@ -1,4 +1,4 @@
-#include <bits/stdc++.h>
+// #include <bits/stdc++.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <iostream>
 // modify from System Programming's hw1 code 
 #define PORT 9413
 #define ERR_EXIT(a) do { perror(a); exit(1); } while(0)

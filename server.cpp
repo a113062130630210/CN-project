@@ -1,4 +1,4 @@
-#include <bits/stdc++.h>
+// #include <bits/stdc++.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sstream>
+#include <iostream>
 // modify from System Programming's hw1 code 
 #define PORT 9413
 #define ERR_EXIT(a) do { perror(a); exit(1); } while(0)
@@ -163,7 +164,7 @@ void start_server(){
         ERR_EXIT("socket");
     }
 
-    if (setsockopt(svr.listen_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, (void*)&tmp, sizeof(tmp)) < 0) {
+    if (setsockopt(svr.listen_fd, SOL_SOCKET, SO_REUSEADDR, (void*)&tmp, sizeof(tmp)) < 0) {
         ERR_EXIT("setsockopt");
     }
     // Forcefully attaching socket to the port
@@ -172,7 +173,7 @@ void start_server(){
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
     server_address.sin_port = htons(PORT);
 
-    if(bind(svr.listen_fd, (struct sockaddr*)&server_address, sizeof(server_address)) < 0){
+    if(::bind(svr.listen_fd, (struct sockaddr*)&server_address, sizeof(server_address)) < 0){
         ERR_EXIT("bind");
     }
 
