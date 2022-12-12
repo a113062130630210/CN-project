@@ -11,6 +11,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sstream>
+//FOR MAC users
+#include <cstring>
 #include <iostream>
 // modify from System Programming's hw1 code 
 #define PORT 9413
