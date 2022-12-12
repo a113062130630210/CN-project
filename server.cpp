@@ -10,11 +10,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sstream>
 // modify from System Programming's hw1 code 
 #define PORT 9413
 #define ERR_EXIT(a) do { perror(a); exit(1); } while(0)
+#define WEBPAGE_LEN 1000000
 using namespace std;
 
+char webpage[WEBPAGE_LEN];
 typedef struct {
     string hostname;  // server's hostname
     int listen_fd;  // fd to wait for a new connection
@@ -44,24 +47,104 @@ struct pollfd fd_array[50];
 int len_fd_array;
 struct sockaddr_in server_address;
 
+void register_write_to_file(){
+    char *username_tmp;
+    char *password_tmp;
+    char username[1000];
+    char password[1000];
+    username_tmp = strstr(p.buf, "username");
+    username_tmp = username_tmp + 9;
+    int index = 0;
+    while(username_tmp[index] != '&'){
+        username[index] = username_tmp[index];
+        index++;
+    }
+    password_tmp = strstr(p.buf, "password");
+    password_tmp = password_tmp + 9;
+    index = 0;
+    while(password_tmp[index] != '&'){
+        password[index] = password_tmp[index];
+        index++;
+    }
+    FILE *fp = fopen("UserInfo.txt", "a");
+    fprintf(fp, "%s %s\n", username, password);
+
+    fclose(fp);
+}
+
+bool check_if_account_exists(){
+    char *username_tmp;
+    char *password_tmp;
+    char username[1000];
+    char password[1000];
+    char filecontent[100000];
+    username_tmp = strstr(p.buf, "username");
+    username_tmp = username_tmp + 9;
+    int index = 0;
+    while(username_tmp[index] != '&'){
+        username[index] = username_tmp[index];
+        index++;
+    }
+    password_tmp = strstr(p.buf, "password");
+    password_tmp = password_tmp + 9;
+    index = 0;
+    while(password_tmp[index] != '&'){
+        password[index] = password_tmp[index];
+        index++;
+    }
+    FILE *fp = fopen("UserInfo.txt", "r");
+    fseek(fp, 0, SEEK_SET);
+    fread(filecontent, 100000, 1, fp);
+    fclose(fp);
+    char *find_username = strstr(filecontent, username);
+    if(find_username == NULL){
+        // didn't find the username in the database
+        return false;
+    }
+    char db_username[1000];
+    char db_password[1000];
+    sscanf(find_username, "%s %s\n", db_username, db_password);
+    if(strcmp(username, db_username) == 0 && strcmp(password, db_password) == 0) return true;
+    return false;
+}
+
+void HTTP_send_file(int connect_fd, string filename){
+    FILE *fp = fopen(filename.c_str(), "r");
+    string http_header = 
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: text/html; charset=utf-8\r\n"
+    "Server: cloudflare\r\n"
+    "Connection: Keep-Alive\r\n";
+    send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+    memset(webpage, '\0', WEBPAGE_LEN);
+    fseek(fp, 0, SEEK_SET);
+    fread(webpage, WEBPAGE_LEN, 1, fp);
+    fclose(fp);
+    send(connect_fd, webpage, strlen(webpage), 0);
+}
+
 void handle_http_request(){
-    char request_cut[5];
-    char webpage[10000];
-    char get[100], path[100], http[100];
-    sscanf(p.buf, "%s %s %s", get, path, http);
-    strncpy(request_cut, http, 4);
+    printf("client message = \n%s\n", p.buf);  
+    char request_cut_third[5];
+    char method[100], path[100], http[100];
+    sscanf(p.buf, "%s %s %s", method, path, http);
+    strncpy(request_cut_third, http, 4);
     // it is HTTP request
-    if(strcmp(request_cut, "HTTP") == 0){
-        //cout << buf << endl;
-        string http_header = 
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html; charset=utf-8"
-        "Server: cloudflare";
-        send(connect_fd, http_header.c_str(), (size_t)http_header.size(),0);
-        FILE *fp = fopen("page.html", "r");
-        fread(webpage, 10000, 1, fp);
-        fclose(fp);
-        send(connect_fd, webpage, strlen(webpage), 0);
+    if(strcmp(request_cut_third, "HTTP") == 0){
+        if(strcmp(path, "/") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "index.php");
+        else if(strcmp(path, "/register.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "register.html");
+        else if(strcmp(path, "/login.php") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "login.php");
+        //else if(strcmp(path, "/register.php") == 0) HTTP_send_file(connect_fd, "register.php"); 
+        else if(strcmp(path, "/index.php") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "index.php");
+        else if(strcmp(path, "/register.php") == 0 && strcmp(method, "POST") == 0){
+            HTTP_send_file(connect_fd, "register.php");
+            register_write_to_file();
+        }
+        else if(strcmp(path, "/login.php") == 0 && strcmp(method, "POST") == 0){
+            bool does_account_exist = check_if_account_exists();
+            cout << does_account_exist << "\n";
+            exit(0);        
+        }
     }else{
         //cout << "HTTP doesn't received\n";
         cout << p.buf << endl;
@@ -116,13 +199,14 @@ int main(int argc, char** argv){
         if((connect_fd = accept(svr.listen_fd, (struct sockaddr*)&server_address, (socklen_t*)&(server_length))) < 0){
             ERR_EXIT("accept");
         }
+        memset(p.buf, '\0', 4096);
+        //read(connect_fd, &p, sizeof(p));
         if(read(connect_fd, &p, sizeof(p)) == 0){
             cout << "client disconnected\n";
             close(connect_fd);
             continue;
         }
         handle_http_request();
-        //send(connect_fd, message, strlen(message), 0);
         close(connect_fd);
     }
 }
