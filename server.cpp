@@ -125,9 +125,36 @@ void register_write_to_file(){
         password += password_tmp[index];
         index++;
     }
-    FILE *fp = fopen("UserInfo.txt", "a");
+    FILE *fp = fopen("database/UserInfo.txt", "a");
     fprintf(fp, "%s %s\n", username.c_str(), password.c_str());
     fclose(fp);
+}
+
+bool same_username_account(){
+    char *username_tmp;
+    string username = "";
+    char filecontent[100000];
+    memset(filecontent, '\0', 100000);
+    username_tmp = strstr(p.buf, "username");
+    username_tmp = username_tmp + 9;
+    int index = 0;
+    while(username_tmp[index] != '&'){
+        username += username_tmp[index];
+        index++;
+    }
+    cout << "User input username = " << username << endl;
+    FILE *fp = fopen("database/UserInfo.txt", "r");
+    fseek(fp, 0, SEEK_SET);
+    fread(filecontent, 100000, 1, fp);
+    fclose(fp);
+    printf("filecontent = %s\n", filecontent);
+    char *find_username = strstr(filecontent, username.c_str());
+    printf("find_username = %s\n", find_username);
+    if(find_username == NULL){
+        // there is no user with the same username
+        return false;
+    }
+    return true;
 }
 
 bool check_if_is_login(){
@@ -146,36 +173,42 @@ bool check_if_is_login(){
 bool check_if_account_exists(){
     char *username_tmp;
     char *password_tmp;
-    char username[1000];
-    char password[1000];
+    string username = "";
+    string password = "";
     char filecontent[100000];
+    memset(filecontent, '\0', 100000);
     username_tmp = strstr(p.buf, "username");
     username_tmp = username_tmp + 9;
     int index = 0;
     while(username_tmp[index] != '&'){
-        username[index] = username_tmp[index];
+        username += username_tmp[index];
         index++;
     }
     password_tmp = strstr(p.buf, "password");
     password_tmp = password_tmp + 9;
     index = 0;
     while(password_tmp[index] != '&'){
-        password[index] = password_tmp[index];
+        password += password_tmp[index];
         index++;
     }
-    FILE *fp = fopen("UserInfo.txt", "r");
+    cout << "User input username = " << username << " password = " << password << endl;
+    FILE *fp = fopen("database/UserInfo.txt", "r");
     fseek(fp, 0, SEEK_SET);
     fread(filecontent, 100000, 1, fp);
     fclose(fp);
-    char *find_username = strstr(filecontent, username);
+    printf("filecontent = %s\n", filecontent);
+    char *find_username = strstr(filecontent, username.c_str());
+    printf("find_username = %s\n", find_username);
     if(find_username == NULL){
         // didn't find the username in the database
         return false;
     }
     char db_username[1000];
     char db_password[1000];
+    memset(db_username, '\0', 1000);
+    memset(db_password, '\0', 1000);
     sscanf(find_username, "%s %s\n", db_username, db_password);
-    if(strcmp(username, db_username) == 0 && strcmp(password, db_password) == 0) return true;
+    if(strcmp(username.c_str(), db_username) == 0 && strcmp(password.c_str(), db_password) == 0) return true;
     return false;
 }
 
@@ -208,7 +241,7 @@ void show_message_setcookie(int connect_fd, string username){
     http_header += cookie;
     //send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
     memset(webpage, '\0', WEBPAGE_LEN);
-    FILE *fp = fopen("welcome_1.html", "r");
+    FILE *fp = fopen("webpage/welcome_1.html", "r");
     fseek(fp, 0, SEEK_SET);
     fread(webpage, WEBPAGE_LEN, 1, fp);
     fclose(fp);
@@ -216,7 +249,7 @@ void show_message_setcookie(int connect_fd, string username){
     http_header += "Hi, ";
     http_header += username;
     http_header += ". Welcome to the message board!</h1><h2>Here is the content of message board</h2>";
-    fp = fopen("messageboard.txt", "a+");
+    fp = fopen("database/messageboard.txt", "a+");
     memset(webpage, '\0', WEBPAGE_LEN);
     fseek(fp, 0, SEEK_SET);
     fread(webpage, WEBPAGE_LEN, 1, fp);
@@ -224,7 +257,7 @@ void show_message_setcookie(int connect_fd, string username){
     http_header += webpage;
     http_header += "</br>";
     memset(webpage, '\0', WEBPAGE_LEN);
-    fp = fopen("welcome_2.html", "r");
+    fp = fopen("webpage/welcome_2.html", "r");
     fseek(fp, 0, SEEK_SET);
     fread(webpage, WEBPAGE_LEN, 1, fp);
     fclose(fp);
@@ -270,7 +303,7 @@ void HTTP_send_file_clear_cookie(int connect_fd, string filename){
 }
 
 void record_to_database(string username, string content){
-    FILE *fp = fopen("messageboard.txt", "a");
+    FILE *fp = fopen("database/messageboard.txt", "a");
     fprintf(fp, "%s: %s<br/>\n", username.c_str(), content.c_str());
     fclose(fp);
 }
@@ -283,28 +316,37 @@ void handle_http_request(){
     strncpy(request_cut_third, http, 4);
     // it is HTTP request
     if(strcmp(request_cut_third, "HTTP") == 0){
-        if(strcmp(path, "/") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "index.php");
-        else if(strcmp(path, "/register.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "register.html");
-        else if(strcmp(path, "/login.php") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "login.php");
-        //else if(strcmp(path, "/register.php") == 0) HTTP_send_file(connect_fd, "register.php"); 
-        else if(strcmp(path, "/index.php") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "index.php");
+        if(strcmp(path, "/") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/index.php");
+        else if(strcmp(path, "/register.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/register.html");
+        else if(strcmp(path, "/register.html") == 0 && strcmp(method, "POST") == 0) HTTP_send_file(connect_fd, "webpage/register.html");
+        else if(strcmp(path, "/login.php") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/login.php");
+        //else if(strcmp(path, "/register.php") == 0) HTTP_send_file(connect_fd, "webpage/register.php"); 
+        else if(strcmp(path, "/index.php") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/index.php");
         else if(strcmp(path, "/register.php") == 0 && strcmp(method, "POST") == 0){
-            HTTP_send_file(connect_fd, "register.php");
-            register_write_to_file();
+            if(same_username_account() == true){
+                // there is another user with the same account
+                HTTP_send_file(connect_fd, "webpage/registerfail.html");
+            }
+            else{
+                HTTP_send_file(connect_fd, "webpage/register.php");
+                register_write_to_file();
+            }
         }
-        else if(strcmp(path, "/index.php") == 0 && strcmp(method, "POST") == 0){
+        else if(strcmp(path, "/login.php") == 0 && strcmp(method, "POST") == 0){
+            // 檢查帳號存不存在，並登入
             bool does_account_exist = check_if_account_exists();
+            cout << "account exist = " << does_account_exist << endl;
             if(does_account_exist == 1){
                 string username = get_username();
                 cout << "username = " << username << endl;
                 show_message_setcookie(connect_fd, username);
             }else{
-                HTTP_send_file(connect_fd, "retry.html");
+                HTTP_send_file(connect_fd, "webpage/retry.html");
             }
         }
-        else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "welcome_1.html");
+        else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/welcome_1.html");
         else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "POST") == 0){
-            // chatboard
+            // 已經在留言板裡面了
             string username = get_username_from_cookie();
             string content = get_content_from_cookie();
             cout << "username = " << username << endl;
@@ -312,8 +354,8 @@ void handle_http_request(){
             record_to_database(username, content);
             show_message_setcookie(connect_fd, username);
         }
-        else if(strcmp(path, "/retry.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "retry.html");
-        else if(strcmp(path, "/logout.php") == 0 && strcmp(method, "POST") == 0) HTTP_send_file_clear_cookie(connect_fd, "index.php");
+        else if(strcmp(path, "/retry.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/retry.html");
+        else if(strcmp(path, "/logout.php") == 0 && strcmp(method, "POST") == 0) HTTP_send_file_clear_cookie(connect_fd, "webpage/index.php");
     }else{
         //cout << "HTTP doesn't received\n";
         cout << p.buf << endl;
