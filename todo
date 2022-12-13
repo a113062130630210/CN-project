@@ -1,0 +1,7 @@
+1. finish welcome.php [ ]
+2. finish retry.php [ ]
+3. fix register leak [ ]
+4. check if removing bits/stdc++.h still works [ ]
+大家的留言板共用
+要用cookie
+server傳setcookie

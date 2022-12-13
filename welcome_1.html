@@ -1,0 +1,18 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Message board</title>
+    <script>
+        function check_blank_message(){
+            var message = document.forms["UserInput"]["message"].value;
+            if(message.length <= 0){
+                alert("You cannot send a blank message");
+                return false;
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1><!--Welcome to the message board</h1>-->
+    

@@ -50,29 +50,97 @@ struct pollfd fd_array[50];
 int len_fd_array;
 struct sockaddr_in server_address;
 
-void register_write_to_file(){
+string get_username(){
     char *username_tmp;
-    char *password_tmp;
-    char username[1000];
-    char password[1000];
-    username_tmp = strstr(p.buf, "username");
+    string username = "";
+    username_tmp = strstr(p.buf, "username=");
+    if(username_tmp == NULL){
+        return "";
+    }
     username_tmp = username_tmp + 9;
     int index = 0;
     while(username_tmp[index] != '&'){
-        username[index] = username_tmp[index];
+        username += username_tmp[index];
         index++;
     }
-    password_tmp = strstr(p.buf, "password");
+
+    return username;
+}
+
+string get_username_from_cookie(){
+    char *cookie_tmp;
+    string cookie = "";
+    cookie_tmp = strstr(p.buf, "Cookie: id=");
+    if(cookie_tmp == NULL){
+        return "";
+    }
+    cookie_tmp = cookie_tmp + 11;
+    int index = 0;
+    while(cookie_tmp[index] != '&'){
+        cookie += cookie_tmp[index];
+        index++;
+    }
+    
+    return cookie;
+}
+
+string get_content_from_cookie(){
+    //TODO
+    char *content_tmp;
+    string content = "";
+    content_tmp = strstr(p.buf, "message=");
+    printf("content_tmp = %s\n", content_tmp);
+    cout << "content = " << content << endl;
+    if(content_tmp == NULL){
+        return "";
+    }
+    int index = 0;
+    content_tmp = content_tmp + 8;
+    while(content_tmp[index] != '&'){
+        content += content_tmp[index];
+        index++;
+    }
+    
+    return content;
+}
+
+void register_write_to_file(){
+    char *username_tmp;
+    char *password_tmp;
+    string username = "";
+    string password = "";
+    username_tmp = strstr(p.buf, "username=");
+    if(username_tmp == NULL) return;
+    username_tmp = username_tmp + 9;
+    int index = 0;
+    while(username_tmp[index] != '&'){
+        username += username_tmp[index];
+        index++;
+    }
+    password_tmp = strstr(p.buf, "password=");
+    if(password_tmp == NULL) return;
     password_tmp = password_tmp + 9;
     index = 0;
     while(password_tmp[index] != '&'){
-        password[index] = password_tmp[index];
+        password += password_tmp[index];
         index++;
     }
     FILE *fp = fopen("UserInfo.txt", "a");
-    fprintf(fp, "%s %s\n", username, password);
-
+    fprintf(fp, "%s %s\n", username.c_str(), password.c_str());
     fclose(fp);
+}
+
+bool check_if_is_login(){
+    char *cookie_tmp;
+    cookie_tmp = strstr(p.buf, "Cookie: id=");
+    if(cookie_tmp != NULL){
+        if(strlen(cookie_tmp) < 4) return true;
+        if(*cookie_tmp == 'N' && *(cookie_tmp + 1) == 'o' && *(cookie_tmp + 2) == 'n' && *(cookie_tmp + 3) == 'e'){
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 bool check_if_account_exists(){
@@ -111,6 +179,60 @@ bool check_if_account_exists(){
     return false;
 }
 
+void HTTP_send_file_with_cookie(int connect_fd, string filename, string username){
+    FILE *fp = fopen(filename.c_str(), "r");
+    string http_header = 
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: text/html; charset=utf-8\r\n"
+    "Server: cloudflare\r\n"
+    "Connection: Keep-Alive\r\n";
+    string cookie = "Set-Cookie: " + username + "&\r\n";
+    http_header += cookie;
+    //send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+    memset(webpage, '\0', WEBPAGE_LEN);
+    fseek(fp, 0, SEEK_SET);
+    fread(webpage, WEBPAGE_LEN, 1, fp);
+    fclose(fp);
+    http_header += webpage;
+    send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+    //send(connect_fd, webpage, strlen(webpage), 0);
+}
+
+void show_message_setcookie(int connect_fd, string username){
+    string http_header = 
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: text/html; charset=utf-8\r\n"
+    "Server: cloudflare\r\n"
+    "Connection: Keep-Alive\r\n";
+    string cookie = "Set-Cookie: id=" + username + "&\r\n";
+    http_header += cookie;
+    //send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+    memset(webpage, '\0', WEBPAGE_LEN);
+    FILE *fp = fopen("welcome_1.html", "r");
+    fseek(fp, 0, SEEK_SET);
+    fread(webpage, WEBPAGE_LEN, 1, fp);
+    fclose(fp);
+    http_header += webpage;
+    http_header += "Hi, ";
+    http_header += username;
+    http_header += ". Welcome to the message board!</h1><h2>Here is the content of message board</h2>";
+    fp = fopen("messageboard.txt", "a+");
+    memset(webpage, '\0', WEBPAGE_LEN);
+    fseek(fp, 0, SEEK_SET);
+    fread(webpage, WEBPAGE_LEN, 1, fp);
+    fclose(fp);
+    http_header += webpage;
+    http_header += "</br>";
+    memset(webpage, '\0', WEBPAGE_LEN);
+    fp = fopen("welcome_2.html", "r");
+    fseek(fp, 0, SEEK_SET);
+    fread(webpage, WEBPAGE_LEN, 1, fp);
+    fclose(fp);
+    http_header += webpage;
+    send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+}
+
+
 void HTTP_send_file(int connect_fd, string filename){
     FILE *fp = fopen(filename.c_str(), "r");
     string http_header = 
@@ -118,12 +240,39 @@ void HTTP_send_file(int connect_fd, string filename){
     "Content-Type: text/html; charset=utf-8\r\n"
     "Server: cloudflare\r\n"
     "Connection: Keep-Alive\r\n";
-    send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+    //send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
     memset(webpage, '\0', WEBPAGE_LEN);
     fseek(fp, 0, SEEK_SET);
     fread(webpage, WEBPAGE_LEN, 1, fp);
     fclose(fp);
-    send(connect_fd, webpage, strlen(webpage), 0);
+    http_header += webpage;
+    //send(connect_fd, webpage, strlen(webpage), 0);
+    send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+}
+
+void HTTP_send_file_clear_cookie(int connect_fd, string filename){
+    FILE *fp = fopen(filename.c_str(), "r");
+    string http_header = 
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: text/html; charset=utf-8\r\n"
+    "Server: cloudflare\r\n"
+    "Connection: Keep-Alive\r\n"
+    "Set-Cookie: id=None\r\n";
+    //"Set-Cookie: token = deleted; path=/; expires= Thu, 01 Jan 1970 00:00:00 GMT\r\n";
+    //send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+    memset(webpage, '\0', WEBPAGE_LEN);
+    fseek(fp, 0, SEEK_SET);
+    fread(webpage, WEBPAGE_LEN, 1, fp);
+    fclose(fp);
+    http_header += webpage;
+    //send(connect_fd, webpage, strlen(webpage), 0);
+    send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+}
+
+void record_to_database(string username, string content){
+    FILE *fp = fopen("messageboard.txt", "a");
+    fprintf(fp, "%s: %s<br/>\n", username.c_str(), content.c_str());
+    fclose(fp);
 }
 
 void handle_http_request(){
@@ -143,11 +292,28 @@ void handle_http_request(){
             HTTP_send_file(connect_fd, "register.php");
             register_write_to_file();
         }
-        else if(strcmp(path, "/login.php") == 0 && strcmp(method, "POST") == 0){
+        else if(strcmp(path, "/index.php") == 0 && strcmp(method, "POST") == 0){
             bool does_account_exist = check_if_account_exists();
-            cout << does_account_exist << "\n";
-            exit(0);        
+            if(does_account_exist == 1){
+                string username = get_username();
+                cout << "username = " << username << endl;
+                show_message_setcookie(connect_fd, username);
+            }else{
+                HTTP_send_file(connect_fd, "retry.html");
+            }
         }
+        else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "welcome_1.html");
+        else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "POST") == 0){
+            // chatboard
+            string username = get_username_from_cookie();
+            string content = get_content_from_cookie();
+            cout << "username = " << username << endl;
+            cout << "content = " << content << endl;
+            record_to_database(username, content);
+            show_message_setcookie(connect_fd, username);
+        }
+        else if(strcmp(path, "/retry.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "retry.html");
+        else if(strcmp(path, "/logout.php") == 0 && strcmp(method, "POST") == 0) HTTP_send_file_clear_cookie(connect_fd, "index.php");
     }else{
         //cout << "HTTP doesn't received\n";
         cout << p.buf << endl;

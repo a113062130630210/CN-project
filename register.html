@@ -5,10 +5,26 @@
     <title>Register Page</title>
     <script>
         function check_two_password_are_the_same(){
+            var username_ = document.forms["UserInput"]["username"].value;
             var password1 = document.forms["UserInput"]["password"].value;
             var password2 = document.forms["UserInput"]["check_password"].value;
             if(password1 != password2){
                 alert("Two passwords are not the same");
+                return false;
+            }
+            
+            if(username_.length == 0){
+                alert("Username cannot be blank!");
+                return false;
+            }
+
+            if(password1.length == 0){
+                alert("Password cannot be blank!");
+                return false;
+            }
+
+            if(password2.length == 0){
+                alert("Checkpassword cannot be blank!");
                 return false;
             }
         }
