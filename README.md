@@ -1,66 +1,58 @@
-# 計網 project phase1
+# 計網 project phase2
 
-## 1. socket 傳文字
+B09901133 林天行
+B09901171 黃柏睿
 
-我的設計是讓 client 跟 server 交互傳文字，並且由 client 先傳
+## 留言板功能
 
-### 執行方式
+## 註冊登入登出功能
 
-執行 makefile 即可，它會把 server.cpp 跟 client.cpp 編譯並分別命名執行檔為 server 跟 client
-
-```makefile
-make
-```
-
-開啟 server
+## 聲音串流
 
 ```bash
-./server
+cd voice
+pip install -r requirements.txt
+
+# MacOS may need to increase UDP package size limit
+sudo sysctl -w net.inet.udp.maxdgram=65535
+
+# Run Server
+python3 server.py <host IP> <port> <file>
+python3 server.py 127.0.0.1 7777 song.wav
+
+# Run Client
+python3 client.py <server IP> <post>
+python3 client.py 127.0.0.1 7777
 ```
 
-開啟 client (要先開啟 server 才能開啟 client，否則會 Connection refused)
+我用pyaudio這個套件讀取聲音檔，然後server用UDP一個一個frame傳，client使用兩個thread，一個負責把資料接收到queue裡，另一個負責按照frame rate播放聲音，達到同步聲音串流
+
+## 視訊串流
 
 ```bash
-./client
+cd voice
+pip install -r requirements.txt
+
+# MacOS may need to increase UDP package size limit
+sudo sysctl -w net.inet.udp.maxdgram=65535
+
+# Run Server
+python3 server.py <host IP> <port>
+python3 server.py 127.0.0.1 7777
+
+# Run Client
+python3 client.py <server IP> <post>
+python3 client.py 127.0.0.1 7777
 ```
 
-開啟 client 後，client 的 terminal 會出現
+我用opencv讀取webcam的影像，經過裁剪跟jpg壓縮後用UDP傳出來，client接收後解壓縮再顯示在另一個視窗中
 
-```bash
-Please say something to server:     
-```
+## 額外功能
 
-這時候輸入的文字 client 就可以傳給 server，並且出現在 server 的 terminal 上，之後 server 的 terminal 會出現 
+### HTTPS
 
-```bash
-Please say something to client: 
-```
+用nginx過cloudflare的憑證，達到最高安全性
 
-這時候 server 可以傳文字給 client，並且出現在 client 的 terminal 上，並且 client 的 terminal 又會出現
+### Multithread
 
-```bash
- Please say something to server:     
-```
-
-以此類推
-
-
-
-最後可以 make clean 刪除 server 跟 client 兩個執行檔
-
-```makefile
-make clean
-```
-
-
-
-## 2. personal profile webpage
-
-http://oasis1.csie.ntu.edu.tw:9413/
-
-示意圖:
-
-![image-20221027150707946](/home/kevin/.config/Typora/typora-user-images/image-20221027150707946.png)
-
-我把 server 放在工作站的 oasis1 上，並且在 tmux 執行 server，這樣即使沒連到工作站 server 也在執行 (影片中我是在背景執行 server，而不是在 tmux，但我後來發現登出工作站後 server 不會繼續執行，因此後來改用 tmux 執行)
-
+用兩個thread讓聲音串流可以同時接收資料跟播放聲音

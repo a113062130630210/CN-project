@@ -1,8 +1,16 @@
-import socket, cv2, pickle
+import pickle
+import socket
+import sys
+
+import cv2
+
+if len(sys.argv) < 3:
+    print("Usage: python client.py <server host IP> <port>")
+    sys.exit(1)
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-host_ip = "127.0.0.1"
-port = 7777
+host_ip = sys.argv[1]
+port = int(sys.argv[2])
 print("Connecting to:", host_ip, port)
 # client_socket.connect((host_ip, port))
 client_socket.sendto("Hello".encode(), (host_ip, port))

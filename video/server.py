@@ -1,10 +1,20 @@
-import socket, cv2, pickle, imutils
+import pickle
+import socket
+import sys
+
+import cv2
+import imutils
+
+if len(sys.argv) < 3:
+    print("Usage: python server.py <host IP> <port>")
+    print("You can use ifconfig to find your host IP")
+    sys.exit(1)
 
 # Socket Create
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-host_ip = "127.0.0.1"
-port = 7777
+host_ip = sys.argv[1]
+port = int(sys.argv[2])
 socket_address = (host_ip, port)
 server_socket.bind(socket_address)
 print("Listening at:", socket_address)

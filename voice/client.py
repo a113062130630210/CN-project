@@ -1,13 +1,19 @@
+import queue
 import socket
-import threading, wave, pyaudio, time, queue
+import sys
+import threading
+
+import pyaudio
+
+if len(sys.argv) < 3:
+    print("Usage: python client.py <server IP> <port>")
+    sys.exit(1)
 
 BUFF_SIZE = 65536
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, BUFF_SIZE)
-host_name = socket.gethostname()
-host_ip = "127.0.0.1"  #  socket.gethostbyname(host_name)
-print(host_ip)
-port = 8888
+host_ip = sys.argv[1]
+port = int(sys.argv[2])
 
 
 p = pyaudio.PyAudio()
