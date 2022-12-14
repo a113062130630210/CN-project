@@ -127,7 +127,13 @@ string get_content_from_cookie(){
             if(strcmp(special_char, "%3D") == 0) content += "=";
             if(strcmp(special_char, "%3E") == 0) content += ">";
             if(strcmp(special_char, "%3F") == 0) content += "?";
-            if(strcmp(special_char, "%40") == 0) content += "@";
+            if(strcmp(special_char, "%7B") == 0) content += "{";
+            if(strcmp(special_char, "%7C") == 0) content += "|";
+            if(strcmp(special_char, "%7D") == 0) content += "}";
+            if(strcmp(special_char, "%7E") == 0) content += "~";
+            if(strcmp(special_char, "%84") == 0) content += "„";
+            if(strcmp(special_char, "%85") == 0) content += "…";
+            if(strcmp(special_char, "%96") == 0) content += "–";
         }
         else{
             content += content_tmp[index];
