@@ -90,14 +90,48 @@ string get_content_from_cookie(){
     string content = "";
     content_tmp = strstr(p.buf, "message=");
     printf("content_tmp = %s\n", content_tmp);
-    cout << "content = " << content << endl;
     if(content_tmp == NULL){
         return "";
     }
     int index = 0;
     content_tmp = content_tmp + 8;
     while(content_tmp[index] != '&'){
-        content += content_tmp[index];
+        char special_char[100] = "";
+        if(content_tmp[index] == '+'){
+            content += " ";
+        }
+        else if(content_tmp[index] == '%'){
+            cout << "content_tmp[index] = " << content_tmp[index] << " content_tmp[index + 1] = " << content_tmp[index + 1] << " content_tmp[index + 2] = " << content_tmp[index + 2] << endl;
+            strncat(special_char, content_tmp + index, 3);
+            cout << "special_char = " << special_char << endl;
+            index += 2;
+            if(strcmp(special_char, "%20") == 0) content += " ";
+            if(strcmp(special_char, "%21") == 0) content += "!";
+            //if(special_char == "%22") content += '"';
+            if(strcmp(special_char, "%23") == 0) content += "#";
+            if(strcmp(special_char, "%24") == 0) content += "$";
+            if(strcmp(special_char, "%25") == 0) content += "%";
+            if(strcmp(special_char, "%26") == 0) content += "&";
+            if(strcmp(special_char, "%27") == 0) content += "'";
+            if(strcmp(special_char, "%28") == 0) content += "(";
+            if(strcmp(special_char, "%29") == 0) content += ")";
+            if(strcmp(special_char, "%2A") == 0) content += "*";
+            if(strcmp(special_char, "%2B") == 0) content += "+";
+            if(strcmp(special_char, "%2C") == 0) content += ",";
+            if(strcmp(special_char, "%2D") == 0) content += "-";
+            if(strcmp(special_char, "%2E") == 0) content += ".";
+            if(strcmp(special_char, "%2F") == 0) content += "/";
+            if(strcmp(special_char, "%3A") == 0) content += ":";
+            if(strcmp(special_char, "%3B") == 0) content += ";";
+            if(strcmp(special_char, "%3C") == 0) content += "<";
+            if(strcmp(special_char, "%3D") == 0) content += "=";
+            if(strcmp(special_char, "%3E") == 0) content += ">";
+            if(strcmp(special_char, "%3F") == 0) content += "?";
+            if(strcmp(special_char, "%40") == 0) content += "@";
+        }
+        else{
+            content += content_tmp[index];
+        }
         index++;
     }
     
@@ -148,10 +182,19 @@ bool same_username_account(){
     fread(filecontent, 100000, 1, fp);
     fclose(fp);
     printf("filecontent = %s\n", filecontent);
-    char *find_username = strstr(filecontent, username.c_str());
-    printf("find_username = %s\n", find_username);
-    if(find_username == NULL){
+    char *database_username_tmp = strstr(filecontent, username.c_str());
+    string database_username = "";
+    printf("find_username = %s\n", database_username_tmp);
+    if(database_username_tmp == NULL){
         // there is no user with the same username
+        return false;
+    }
+    index = 0;
+    while(database_username_tmp[index] != ' '){
+        database_username += username_tmp[index];
+        index++;
+    }
+    if(username != database_username){
         return false;
     }
     return true;
@@ -344,7 +387,7 @@ void handle_http_request(){
                 HTTP_send_file(connect_fd, "webpage/retry.html");
             }
         }
-        else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/welcome_1.html");
+        else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/index.php");
         else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "POST") == 0){
             // 已經在留言板裡面了
             string username = get_username_from_cookie();
