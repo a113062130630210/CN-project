@@ -74,7 +74,7 @@ string get_username_from_cookie(){
     if(cookie_tmp == NULL){
         return "";
     }
-    cookie_tmp = cookie_tmp + 11;
+    cookie_tmp = cookie_tmp + 3;
     int index = 0;
     while(cookie_tmp[index] != '&'){
         cookie += cookie_tmp[index];
