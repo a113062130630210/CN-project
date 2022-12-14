@@ -15,7 +15,7 @@
 #include <cstring>
 #include <iostream>
 // modify from System Programming's hw1 code 
-#define PORT 9413
+#define PORT 7777
 #define ERR_EXIT(a) do { perror(a); exit(1); } while(0)
 #define WEBPAGE_LEN 1000000
 using namespace std;
@@ -268,7 +268,7 @@ void HTTP_send_file_with_cookie(int connect_fd, string filename, string username
     "Content-Type: text/html; charset=utf-8\r\n"
     "Server: cloudflare\r\n"
     "Connection: Keep-Alive\r\n";
-    string cookie = "Set-Cookie: " + username + "&\r\n";
+    string cookie = "Set-Cookie: " + username + "&\r\n\r\n";
     http_header += cookie;
     //send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
     memset(webpage, '\0', WEBPAGE_LEN);
@@ -286,7 +286,7 @@ void show_message_setcookie(int connect_fd, string username){
     "Content-Type: text/html; charset=utf-8\r\n"
     "Server: cloudflare\r\n"
     "Connection: Keep-Alive\r\n";
-    string cookie = "Set-Cookie: id=" + username + "&\r\n";
+    string cookie = "Set-Cookie: id=" + username + "&\r\n\r\n";
     http_header += cookie;
     //send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
     memset(webpage, '\0', WEBPAGE_LEN);
@@ -321,7 +321,8 @@ void HTTP_send_file(int connect_fd, string filename){
     "HTTP/1.1 200 OK\r\n"
     "Content-Type: text/html; charset=utf-8\r\n"
     "Server: cloudflare\r\n"
-    "Connection: Keep-Alive\r\n";
+    "Connection: Keep-Alive\r\n"
+    "\r\n";
     //send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
     memset(webpage, '\0', WEBPAGE_LEN);
     fseek(fp, 0, SEEK_SET);
@@ -330,6 +331,8 @@ void HTTP_send_file(int connect_fd, string filename){
     http_header += webpage;
     //send(connect_fd, webpage, strlen(webpage), 0);
     send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
+
+    cout << "send to client: \n" << http_header << endl;
 }
 
 void HTTP_send_file_clear_cookie(int connect_fd, string filename){
@@ -339,7 +342,8 @@ void HTTP_send_file_clear_cookie(int connect_fd, string filename){
     "Content-Type: text/html; charset=utf-8\r\n"
     "Server: cloudflare\r\n"
     "Connection: Keep-Alive\r\n"
-    "Set-Cookie: id=None\r\n";
+    "Set-Cookie: id=None\r\n"
+    "\r\n";
     //"Set-Cookie: token = deleted; path=/; expires= Thu, 01 Jan 1970 00:00:00 GMT\r\n";
     //send(connect_fd, http_header.c_str(), (size_t)http_header.size(), 0);
     memset(webpage, '\0', WEBPAGE_LEN);
@@ -362,6 +366,7 @@ void handle_http_request(){
     char request_cut_third[5];
     char method[100], path[100], http[100];
     sscanf(p.buf, "%s %s %s", method, path, http);
+    cout << method << " " << path << " " << http << endl;
     strncpy(request_cut_third, http, 4);
     // it is HTTP request
     if(strcmp(request_cut_third, "HTTP") == 0){
@@ -405,6 +410,7 @@ void handle_http_request(){
         }
         else if(strcmp(path, "/retry.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/retry.html");
         else if(strcmp(path, "/logout.php") == 0 && strcmp(method, "POST") == 0) HTTP_send_file_clear_cookie(connect_fd, "webpage/index.php");
+        else HTTP_send_file(connect_fd, "webpage/404.html");
     }else{
         //cout << "HTTP doesn't received\n";
         cout << p.buf << endl;
@@ -429,7 +435,7 @@ void start_server(){
     // Forcefully attaching socket to the port
     
     server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_address.sin_addr.s_addr = INADDR_ANY;
     server_address.sin_port = htons(PORT);
 
     if(::bind(svr.listen_fd, (struct sockaddr*)&server_address, sizeof(server_address)) < 0){
@@ -459,6 +465,7 @@ int main(int argc, char** argv){
         if((connect_fd = accept(svr.listen_fd, (struct sockaddr*)&server_address, (socklen_t*)&(server_length))) < 0){
             ERR_EXIT("accept");
         }
+        cout << "client connected\n";
         memset(p.buf, '\0', 4096);
         //read(connect_fd, &p, sizeof(p));
         if(read(connect_fd, &p, sizeof(p)) == 0){

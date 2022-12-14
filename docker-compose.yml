@@ -1,0 +1,14 @@
+version: "3.7"
+services:
+  web:
+    build: .
+    expose:
+      - 9413
+    restart: always
+    networks:
+      - cn_web
+
+networks:
+  cn_web:
+    external:
+      name: eeinfo
