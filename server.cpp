@@ -70,7 +70,7 @@ string get_username(){
 string get_username_from_cookie(){
     char *cookie_tmp;
     string cookie = "";
-    cookie_tmp = strstr(p.buf, "Cookie: id=");
+    cookie_tmp = strstr(p.buf, "id=");
     if(cookie_tmp == NULL){
         return "";
     }
