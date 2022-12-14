@@ -208,8 +208,9 @@ bool same_username_account(){
 
 bool check_if_is_login(){
     char *cookie_tmp;
-    cookie_tmp = strstr(p.buf, "Cookie: id=");
+    cookie_tmp = strstr(p.buf, "id=");
     if(cookie_tmp != NULL){
+        cookie_tmp = cookie_tmp + 3;
         if(strlen(cookie_tmp) < 4) return true;
         if(*cookie_tmp == 'N' && *(cookie_tmp + 1) == 'o' && *(cookie_tmp + 2) == 'n' && *(cookie_tmp + 3) == 'e'){
             return false;
@@ -366,7 +367,7 @@ void handle_http_request(){
     char request_cut_third[5];
     char method[100], path[100], http[100];
     sscanf(p.buf, "%s %s %s", method, path, http);
-    cout << method << " " << path << " " << http << endl;
+    //cout << method << " " << path << " " << http << endl;
     strncpy(request_cut_third, http, 4);
     // it is HTTP request
     if(strcmp(request_cut_third, "HTTP") == 0){
@@ -398,7 +399,14 @@ void handle_http_request(){
                 HTTP_send_file(connect_fd, "webpage/retry.html");
             }
         }
-        else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "GET") == 0) HTTP_send_file(connect_fd, "webpage/index.php");
+        else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "GET") == 0){
+            if(check_if_is_login() == true){
+                string username = get_username();
+                show_message_setcookie(connect_fd, username);
+            }else{
+                HTTP_send_file(connect_fd, "webpage/index.php");
+            }
+        }
         else if(strcmp(path, "/welcome_1.html") == 0 && strcmp(method, "POST") == 0){
             // 已經在留言板裡面了
             string username = get_username_from_cookie();
