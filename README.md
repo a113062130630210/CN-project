@@ -7,13 +7,21 @@ Page link: [https://cn-project.ntuee.org](https://cn-project.ntuee.org)
 
 ## 留言板功能
 
-先註冊並登入後，可以看到留言板內容，並且會利用 cookie 的 id 欄位去看現在登入的帳號是誰，並在留言前標記是哪個帳號留言的
+```bash
+make
+./server
+```
+
+連上 https://cn-project.ntuee.org 後，先在註冊頁面註冊完並登入後，可以看到留言板內容，並且會利用 cookie 的 id 欄位去看現在登入的帳號是誰，並在留言前標記是哪個帳號留言的
 (盡量不要發有特殊字元的留言，有可能該字元會變成空白)
 
 ## 註冊登入登出功能
+```bash
+make
+./server
+```
 
-可以註冊並登入進入留言板，在留言板內可以登出，有使用 cookie 的 id 欄位記錄現在使用者是誰，登出後會將 cookie 的 id 設成 None
-(原本是使用 expires 並將日期設成一個之前的日期，但並沒有成功)，server 會去偵測如果 cookie id 是 None 並且要 access 留言板(代表已經登出)，會重新導回登入頁面
+連上 https://cn-project.ntuee.org 後，可以註冊並登入進入留言板，在留言板內可以登出，有使用 cookie 的 id 欄位記錄現在使用者是誰，登出後會將 cookie 的 id 設成 None (原本是使用 expires 並將日期設成一個之前的日期，但並沒有成功)，server 會去偵測如果 cookie id 是 None 並且要 access 留言板(代表已經登出)，會重新導回登入頁面
 
 ## 聲音串流
 
